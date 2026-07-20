@@ -1,0 +1,13 @@
+{
+  "name": "mechami-plugins",
+  "owner": {
+        "name": "Mechami Solutions LLC"
+  },
+  "plugins": [
+    {
+      "name": "finance-tutor",
+      "source": "./plugins/finance-tutor",
+      "description": "Finance Q&A learning FOR EDUCATIONAL PURPOSES ONLY, not financial advice."
+    }
+  ]
+}
