@@ -16,10 +16,20 @@ This skill sets up a finance Q&A learning workflow. The user asks finance questi
 
 **References (applies to every finance answer):** End each finance answer with a `**References**` section linking to authoritative sources relevant to the topics covered (e.g., TreasuryDirect, IRS, SEC, FDIC, Federal Reserve, Investopedia, Vanguard). Every finance answer must include this section.
 
-Link accuracy matters — do not invent or guess URLs:
-- Prefer stable root or well-known section domains you are confident exist (e.g., `https://www.irs.gov`, `https://www.treasurydirect.gov`, `https://www.sec.gov`, `https://investor.gov`) over deep paths you are unsure about.
-- If you need a specific deep link (e.g., a particular IRS topic or form page), verify it with web search/fetch before including it. If it can't be verified, link the authoritative site's root or search page instead and name the specific resource in the link text.
-- Never fabricate a plausible-looking URL. A correct higher-level link is better than a broken specific one.
+**Specific pages are the goal.** A reference should point at the page that actually documents the claim (e.g., the IRS topic page, the TreasuryDirect product page, the SEC rule text) — not at a homepage the reader has to search from. Root-domain links are a last resort, not a safe default.
+
+Apply these three options **in order**. Do not skip ahead to a later option because it feels safer:
+
+1. **Verify, then link specifically (preferred).** Use web search/fetch to confirm the deep URL resolves, then include it. This is the default path — run the searches rather than avoiding them. Verifying several links in one batch of parallel calls keeps this cheap.
+2. **Link specifically with a warning.** If verification is unavailable or the fetch fails, still provide the specific URL, place a warning emoji ⚠️ to the right of the link, and add this single line of warning text after the References/Footnotes:
+
+   > ⚠️ *Unable to verify this specific URL using web search/fetch at the time this content was generated*
+
+3. **Fall back to a root or well-known section domain** (e.g., `https://www.irs.gov`, `https://www.treasurydirect.gov`, `https://www.sec.gov`, `https://investor.gov`) **only when 1 and 2 both fail** — that is, when no specific page plausibly exists for the topic, or you cannot name a specific URL without guessing at its path.
+
+Never fabricate a plausible-looking URL. Option 2 covers *unverified* links you have real grounds to believe in (a page you know exists, whose exact path you could not confirm); it does not license inventing paths. When you genuinely have no candidate URL, use option 3.
+
+Silently downgrading to option 3 defeats the ⚠️ convention: its purpose is to show the reader *which* links are uncertain, so a homepage with no signal is worse than a specific link that is honestly flagged.
 
 **Append-only files:** `transcript.md` and `prompt_log.md` are append-only — new entries are *added to the end*, and existing entries are never rewritten. This matters because the value of these files is fidelity: a full-file `Write` would force you to reproduce all prior content from context on every update, which risks silently dropping or altering earlier entries and gets more expensive as the file grows. Appending sidesteps that entirely.
 
