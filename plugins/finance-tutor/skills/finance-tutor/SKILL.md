@@ -149,13 +149,13 @@ Entries must be separated by a single blank line — no double-spacing between e
 ```
 # Prompt Log
 
-## Session start: 2026-04-29 1:47 PM EDT
+## Session start: 2026-04-29 01:47 PM EDT
 
 1. [first prompt]
 
 2. [second prompt]
 
-## Session start: 2026-04-29 4:03 PM EDT
+## Session start: 2026-04-29 04:03 PM EDT
 
 1. [first prompt]
 
@@ -178,7 +178,7 @@ Entries must be separated by a single blank line — no double-spacing between e
 
 ## Q: What is the difference between a Treasury bill and a Treasury bond?
 
-_2026-04-29 1:47 PM EDT_
+_2026-04-29 01:47 PM EDT_
 
 Treasury bills (T-bills) are short-term securities that mature in one year or less and are sold at a discount to face value. Treasury bonds are long-term securities with maturities of 20 or 30 years that pay interest every six months.
 
@@ -191,7 +191,7 @@ Treasury bills (T-bills) are short-term securities that mature in one year or le
 
 ## Q: How is interest on Treasury securities taxed?
 
-_2026-04-29 1:52 PM EDT_
+_2026-04-29 01:52 PM EDT_
 
 Interest income from Treasury securities is subject to federal income tax but is exempt from state and local income taxes.
 
