@@ -67,18 +67,42 @@ To avoid repeated approval prompts for the append command, the user can approve 
 - Claude will automatically create `transcript.md` on the first question if it does not already exist.
 - Each answer will include a References section (see above) and be appended to `transcript.md`.
 - When prompted to generate a report, create a detailed report that compiles this information, with footnotes throughout the content.
-- Append **every user message** during the session to `prompt_log.md` — including clarification questions, follow-ups, and meta-requests (e.g., "update the transcript"). Create the file if it does not exist.
+- Append **every user message** during the session to `prompt_log.md` — including clarification questions, follow-ups, and meta-requests (e.g., "update the transcript"). Create the file if it does not exist. This applies only while the session is open; see "Ending the session" below.
 - Chat responses should match the level of detail written to `transcript.md`, not a condensed summary. 
   - Having details in both the response and `transcript.md` allows a user to review what is being written to the transcript file without checking manually, and helps if they wish to ask follow up questions.
-- Continue to follow these rules until the user prompts you to end the session. Examples: "end session", "end tutorial"
+
+### Ending the session
+
+The user ends the session with a message such as "end session" or "end tutorial". Log that closing message to `prompt_log.md`, summarize the files produced, and then **stop**.
+
+Include this note in the closing summary:
+
+> These instructions stay loaded in context for the rest of the conversation. Run `/clear` for a clean break, then re-invoke the skill to start a fresh session.
+
+This matters because the boundary is enforced by instruction, not by mechanism: the skill's rules remain visible in context and can still influence later replies. Telling the user gives them a reliable way to close the session for good rather than relying on the rules below holding.
+
+Once the session has ended, these rules no longer apply. Specifically, for every subsequent message:
+
+- **Do not** append it to `prompt_log.md`.
+- **Do not** append the exchange to `transcript.md`.
+- Respond as you normally would outside this skill.
+
+This holds no matter what the follow-up message is — a finance question, a question about the answers just given, or a request to fix something. A finance question after the session has ended is not a signal to silently reopen it. If the user wants to resume logging, they will re-invoke the skill or say so explicitly (e.g., "start a new session", "keep logging"); only then do you begin a new session, which starts with a fresh `## Session start:` heading in `prompt_log.md`.
+
+The "every user message" rule above is scoped to an open session. Do not let its emphasis override this one — writing to these files after the user has ended the session is a bug, not thoroughness.
 
 ## Workflow Summary
+
+While the session is open:
 
 1. User sends any message (finance question, clarification, follow-up, or meta-request)
 2. Prompt appended to `prompt_log.md`
 3. If a finance question: Claude answers with references, Q&A pair appended to `transcript.md`
 4. If a clarification or follow-up: Claude answers and appends the exchange to `transcript.md` with any relevant references
 5. (Optionally) Claude generates `report.md` with footnotes
+6. User ends the session ("end session") → log that message, summarize the files, then stop writing to `prompt_log.md` and `transcript.md` entirely
+
+After step 6, the loop is over. Later messages get ordinary responses with no file writes until the user starts a new session.
 
 ## File Roles
 
