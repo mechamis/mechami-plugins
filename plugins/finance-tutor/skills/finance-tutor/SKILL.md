@@ -77,7 +77,7 @@ The user ends the session with a message such as "end session" or "end tutorial"
 
 Include this note in the closing summary:
 
-> These instructions stay loaded in context for the rest of the conversation. Run `/clear` for a clean break, then re-invoke the skill to start a fresh session.
+> These instructions stay loaded in context for the rest of the conversation. Start a new session/conversation for a clean break, then re-invoke the skill to start learning again.
 
 This matters because the boundary is enforced by instruction, not by mechanism: the skill's rules remain visible in context and can still influence later replies. Telling the user gives them a reliable way to close the session for good rather than relying on the rules below holding.
 
