@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 This skill sets up a finance Q&A learning workflow. The user asks finance questions, Claude answers them educationally with authoritative references, and every exchange is appended to a persistent transcript. A compiled report with footnotes can be generated at any time.
 
-**File location:** Create and maintain all files (`transcript.md`, `prompt_log.md`, `report.md`) in the current working directory.
+**File location:** Create and maintain all files (`transcript.md`, `prompt_log.md`, `report.md`) in the current working directory. This is not just a convention — `scripts/append.py` enforces it, and rejects anything else (see "Where the script will write" below).
 
 **References (applies to every finance answer):** End each finance answer with a `**References**` section linking to authoritative sources relevant to the topics covered (e.g., TreasuryDirect, IRS, SEC, FDIC, Federal Reserve, Investopedia, Vanguard). Every finance answer must include this section.
 
@@ -36,7 +36,7 @@ Silently downgrading to option 3 defeats the ⚠️ convention: its purpose is t
 Use the bundled helper `scripts/append.py` to append. It reads the text to append from stdin and opens the target in append mode, so it structurally cannot truncate or overwrite prior content:
 
 ```bash
-python scripts/append.py transcript.md <<'EOF'
+python3 scripts/append.py transcript.md <<'EOF'
 ## Q: <question>
 
 _<timestamp>_
@@ -53,6 +53,15 @@ EOF
 ```
 
 Pipe the fully formatted entry (matching the templates below) on stdin. Pass `--newline` if you want to guarantee the file ends with a trailing newline. The script creates the file and any parent directories if they don't exist yet, so a separate "create the file first" step isn't needed.
+
+**Where the script will write.** Two guards constrain the target, and both must pass or nothing is written:
+
+1. The file name must be exactly `transcript.md`, `prompt_log.md`, or `report.md`. Matching is case-sensitive.
+2. The target must resolve to a location inside the current working directory. Symlinks are followed before the check, so a link is judged by where it actually lands, not where it sits — a `transcript.md` symlinked to somewhere outside the working directory is rejected.
+
+Either failure exits non-zero and prints a line beginning with `error:` on stderr explaining which guard tripped.
+
+Treat that error as a signal that the *target* was wrong, and fix the path. Do not route around it by falling back to a full-file `Write`, by `cd`-ing elsewhere first, or by retrying under a different name — those defeat the append-only guarantee described above, which is the entire reason this helper exists.
 
 To avoid repeated approval prompts for the append command, the user can approve it once: when the permission prompt first appears, choosing the "don't ask again" option lets Claude Code record a matching allow rule automatically. That is more reliable than hand-writing a permission rule, because the script's real invocation path includes the plugin version and can change between releases. Do not append with a full-file `Write`; use `Write` only for `report.md`, which is regenerated whole each time.
 
