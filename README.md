@@ -40,7 +40,8 @@ Ask questions on topics you want to learn more about, and you'll get educational
 #### Claude Code
 
 ```
-claude plugin marketplace add mechamis/mechami-plugins && claude plugin install finance-tutor@finance-tutor
+claude plugin marketplace add mechamis/mechami-plugins && 
+claude plugin install finance-tutor@mechami-plugins
 ```
 
 #### Claude CoWork
