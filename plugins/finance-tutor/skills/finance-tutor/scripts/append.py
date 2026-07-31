@@ -17,6 +17,7 @@ import argparse
 import os
 import sys
 
+allowed_file_names = ['transcript.md', 'prompt_log.md', 'report.md']
 
 def main():
     parser = argparse.ArgumentParser(
@@ -33,6 +34,15 @@ def main():
     text = sys.stdin.read()
     if args.newline and not text.endswith("\n"):
         text += "\n"
+
+    file_name = os.path.basename(os.path.abspath(args.target))
+    if file_name not in allowed_file_names:
+        print(
+            f"error: '{file_name}' is not an allowed append target "
+            f"(allowed: {', '.join(allowed_file_names)})",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     parent = os.path.dirname(os.path.abspath(args.target))
     os.makedirs(parent, exist_ok=True)
