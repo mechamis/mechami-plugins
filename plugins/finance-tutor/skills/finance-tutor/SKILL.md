@@ -52,6 +52,8 @@ _<timestamp>_
 EOF
 ```
 
+**Quote the heredoc delimiter.** Always write `<<'EOF'`, never `<<EOF`. The quotes stop the shell from expanding the body before the script sees it. Unquoted, `$10,000` becomes `,000`, `$1` and `$2` vanish entirely, and backticks execute as shell commands — and dollar amounts appear in nearly every finance answer. The command still exits `0`, so nothing signals the damage, and because the write is append-only the corrupted entry cannot be rewritten afterward.
+
 **Interpreter name is platform-specific.** The example above uses `python3`, which is correct on macOS and Linux. Windows has no `python3` — use `python`, or `py -3` if that is unavailable. Do not assume `python3` and retry blindly on failure: Windows registers an App Execution Alias for `python3.exe` that opens the Microsoft Store rather than reporting a missing command, so the failure can look like nothing happening at all. Pick the spelling that matches the platform you are running on.
 
 Pipe the fully formatted entry (matching the templates below) on stdin. Pass `--newline` if you want to guarantee the file ends with a trailing newline. The script creates the file and any parent directories if they don't exist yet, so a separate "create the file first" step isn't needed.
