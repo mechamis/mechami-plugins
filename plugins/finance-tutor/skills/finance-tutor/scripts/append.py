@@ -3,14 +3,14 @@
 
 Generic helper: it knows nothing about this skill's formats. It only ever opens
 the target in append mode ("a"), which physically cannot truncate or rewrite
-existing content — so prior entries are safe no matter how large the file grows.
+existing content - so prior entries are safe no matter how large the file grows.
 The caller supplies the fully formatted text on stdin.
 
 Two guards keep writes where they belong: the file name must be one of
 `allowed_file_names`, and the target must resolve to a location inside the
 current working directory. Both failures exit non-zero with a message on stderr.
 
-Usage:
+Usage (use `python` or `py -3` on Windows, which has no `python3`):
     python3 append.py <target_file> [--newline] < text
     python3 append.py transcript.md <<'EOF'
     ## Q: ...
@@ -40,6 +40,10 @@ def main():
         help="Ensure the appended text ends with a trailing newline",
     )
     args = parser.parse_args()
+
+    # stdin otherwise decodes with the locale encoding - cp1252 on Windows, which
+    # silently mangles the em dashes and emojis that entries routinely carry.
+    sys.stdin.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
 
     text = sys.stdin.read()
     if args.newline and not text.endswith("\n"):
