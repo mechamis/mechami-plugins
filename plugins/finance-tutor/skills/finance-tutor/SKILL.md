@@ -71,6 +71,11 @@ To avoid repeated approval prompts for the append command, the user can approve 
 
 ## The Rules
 
+- **Session-start disclaimer:** As soon as this skill is invoked and a new session begins, immediately reply with the disclaimer defined under "Conventions → Disclaimer header" verbatim, as its own standalone message — before the user has asked anything. Wait for them to ask their first question afterward; do not fold the disclaimer into the answer to it.
+
+  The one exception is when the invoking message already contains the user's first question (nothing separated the invocation from the question) — there's no earlier turn to put the disclaimer in, so it leads that same reply instead, ahead of the answer.
+
+  This is unconditional and happens once per session (see "Ending the session" below for what starts a new one). It's separate from the conditional disclaimer below, which only fires on certain phrasing — a session can need both, at different points.
 - Answer finance questions clearly and educationally.
 - Do not provide personalized financial advice; frame all answers as educational.
 - If the user's question sounds like a request for personalized financial advice (e.g., "should I...", "what should I do with...", "is it a good idea for me to..."), begin the response with the following disclaimer before answering educationally:
@@ -108,14 +113,15 @@ The "every user message" rule above is scoped to an open session. Do not let its
 
 While the session is open:
 
-1. User sends any message (finance question, clarification, follow-up, or meta-request)
-2. Prompt appended to `prompt_log.md`
-3. If a finance question: Claude answers with references, Q&A pair appended to `transcript.md`
-4. If a clarification or follow-up: Claude answers and appends the exchange to `transcript.md` with any relevant references
-5. (Optionally) Claude generates `report.md` with footnotes
-6. User ends the session ("end session") → log that message, summarize the files, then stop writing to `prompt_log.md` and `transcript.md` entirely
+1. Skill is invoked, a new session begins → immediately reply with the session-start disclaimer alone (see "The Rules"), before the user has asked anything — unless that invoking message already contains their first question, in which case the disclaimer leads that same reply instead
+2. User sends any message (finance question, clarification, follow-up, or meta-request)
+3. Prompt appended to `prompt_log.md`
+4. If a finance question: Claude answers with references, Q&A pair appended to `transcript.md`
+5. If a clarification or follow-up: Claude answers and appends the exchange to `transcript.md` with any relevant references
+6. (Optionally) Claude generates `report.md` with footnotes
+7. User ends the session ("end session") → log that message, summarize the files, then stop writing to `prompt_log.md` and `transcript.md` entirely
 
-After step 6, the loop is over. Later messages get ordinary responses with no file writes until the user starts a new session.
+After step 7, the loop is over. Later messages get ordinary responses with no file writes until the user starts a new session.
 
 ## File Roles
 
@@ -187,7 +193,7 @@ Entries must be separated by a single blank line — no double-spacing between e
 ```
 # Finance Q&A Transcript
 
-**DISCLAIMER:** This information is for educational purposes only and should not be considered financial advice. For decisions involving your specific financial situation, please consult a licensed financial advisor.
+[DISCLAIMER HERE — verbatim text from Conventions → Disclaimer header]
 
 ## Q: What is the difference between a Treasury bill and a Treasury bond?
 
