@@ -2,7 +2,7 @@
 
 ## The *Finance Tutor* Skill
 
-*A skill/plugin for Claude Code, Claude CoWork, and other AI Agents that support the [Agent Skills standard](https://agentskills.io). Currently, supported platforms include Claude Code and Claude CoWork. Compatibility with OpenAI Codex and additional platforms is in development.*
+*A skill/plugin for Claude Code, Claude Cowork, and other AI Agents that support the [Agent Skills standard](https://agentskills.io). Currently, supported platforms include Claude Code and Claude Cowork. Compatibility with OpenAI Codex and additional platforms is in development.*
 
 You want to improve your financial knowledge and literacy, and you’ve got questions. You want to be a more educated consumer and have topics you want to research. The `finance-tutor` skill is here to help. 
 
@@ -44,7 +44,7 @@ claude plugin marketplace add mechamis/mechami-plugins &&
 claude plugin install finance-tutor@mechami-plugins
 ```
 
-#### Claude CoWork
+#### Claude Cowork
 
 Add the `mechamis/mechami-plugins` marketplace under `Settings > Plugins`
 
