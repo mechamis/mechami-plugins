@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 This skill sets up a finance Q&A learning workflow. The user asks finance questions, Claude answers them educationally with authoritative references, and every exchange is appended to a persistent transcript. A compiled report with footnotes can be generated at any time.
 
-**File location:** Create and maintain all files (`transcript.md`, `prompt_log.md`, `report.md`) in the current working directory. This is not just a convention — `scripts/append.py` enforces it, and rejects anything else (see "Where the script will write" below).
+**File location:** Create and maintain all files (`transcript.md`, `prompt_log.md`, `report.md`) in the current working directory. For the two append-only files this is not just a convention — `scripts/append.py` enforces it, and rejects anything else (see "Where the script will write" below).
 
 **References (applies to every finance answer):** End each finance answer with a `**References**` section linking to authoritative sources relevant to the topics covered (e.g., TreasuryDirect, IRS, SEC, FDIC, Federal Reserve, Investopedia, Vanguard). Every finance answer must include this section.
 
@@ -24,6 +24,13 @@ Apply these three options **in order**. Do not skip ahead to a later option beca
 2. **Link specifically with a warning.** If verification is unavailable or the fetch fails, still provide the specific URL, place a warning emoji ⚠️ to the right of the link, and add this single line of warning text after the References/Footnotes:
 
    > ⚠️ *Unable to verify this specific URL using web search/fetch at the time this content was generated*
+
+   Use the ⚠️ character itself, not a text stand-in like `[WARN]`. The marker's whole job is to catch the reader's eye as they scan a list of links, which a bracketed word does not do.
+
+   Before settling for a warning, distinguish the two ways verification fails, because they call for different responses:
+
+   - **The page is gone (404).** The link is simply wrong. Search for the page that actually documents the claim and cite that instead — a verified correct link beats a flagged broken one, and shipping a known-404 under a warning misuses the convention.
+   - **The fetch was refused (403, timeout, blocked domain).** The page likely exists and you just cannot reach it. This is what option 2 is for: keep the specific URL and flag it. A domain-scoped search that returns the same page and title is reasonable corroboration.
 
 3. **Fall back to a root or well-known section domain** (e.g., `https://www.irs.gov`, `https://www.treasurydirect.gov`, `https://www.sec.gov`, `https://investor.gov`) **only when 1 and 2 both fail** — that is, when no specific page plausibly exists for the topic, or you cannot name a specific URL without guessing at its path.
 
@@ -54,13 +61,21 @@ EOF
 
 **Quote the heredoc delimiter.** Always write `<<'EOF'`, never `<<EOF`. The quotes stop the shell from expanding the body before the script sees it. Unquoted, `$10,000` becomes `,000`, `$1` and `$2` vanish entirely, and backticks execute as shell commands — and dollar amounts appear in nearly every finance answer. The command still exits `0`, so nothing signals the damage, and because the write is append-only the corrupted entry cannot be rewritten afterward.
 
+**Once the delimiter is quoted, dollar signs are completely safe.** This is the part worth internalizing, because the warning above tends to breed defensive habits that quietly damage the transcript in their own right. All three of these are mistakes:
+
+- `\$7,500` — the quotes already prevented expansion, so the backslash is passed through literally and the file stores `\$7,500`. Markdown renders that as `$7,500`, so it survives a visual check while the stored text is wrong.
+- `7,500 dollars` — avoiding the character altogether. The transcript is meant to read like the answer you gave, and spelled-out amounts are worse writing.
+- Switching to `Write` because the heredoc feels risky — that discards the append-only guarantee entirely.
+
+With `<<'EOF'` in place, write the body exactly as it should appear in the finished file: plain `$7,500`, ordinary backticks, no escaping and no rephrasing. Quote the delimiter *or* escape the content, never both — and quoting the delimiter is the one to choose.
+
 **Interpreter name is platform-specific.** The example above uses `python3`, which is correct on macOS and Linux. Windows has no `python3` — use `python`, or `py -3` if that is unavailable. Do not assume `python3` and retry blindly on failure: Windows registers an App Execution Alias for `python3.exe` that opens the Microsoft Store rather than reporting a missing command, so the failure can look like nothing happening at all. Pick the spelling that matches the platform you are running on.
 
 Pipe the fully formatted entry (matching the templates below) on stdin. Pass `--newline` if you want to guarantee the file ends with a trailing newline. The script creates the file and any parent directories if they don't exist yet, so a separate "create the file first" step isn't needed.
 
 **Where the script will write.** Two guards constrain the target, and both must pass or nothing is written:
 
-1. The file name must be exactly `transcript.md`, `prompt_log.md`, or `report.md`. Matching is case-sensitive.
+1. The file name must be exactly `transcript.md` or `prompt_log.md`. Matching is case-sensitive. `report.md` is deliberately not accepted — it is regenerated whole each time, and a script that can only append would duplicate the previous report rather than replace it, so the rejection turns a silent content bug into an immediate error.
 2. The target must resolve to a location inside the current working directory. Symlinks are followed before the check, so a link is judged by where it actually lands, not where it sits — a `transcript.md` symlinked to somewhere outside the working directory is rejected.
 
 Either failure exits non-zero and prints a line beginning with `error:` on stderr explaining which guard tripped.
@@ -86,6 +101,11 @@ To avoid repeated approval prompts for the append command, the user can approve 
 - Each answer will include a References section (see above) and be appended to `transcript.md`.
 - When prompted to generate a report, create a detailed report that compiles this information, with footnotes throughout the content.
 - Append **every user message** during the session to `prompt_log.md` — including clarification questions, follow-ups, and meta-requests (e.g., "update the transcript"). Create the file if it does not exist. This applies only while the session is open; see "Ending the session" below.
+
+  Two boundaries on "every user message", because both are otherwise judgment calls that different sessions resolve differently — and a log whose numbering depends on who ran it is not the faithful record this file exists to be:
+
+  - **The invoking message is not a numbered entry.** Invoking the skill is a command, not a question. Write the `## Session start:` heading when the first real prompt arrives, then number from `1.` — so entry numbers line up with the questions actually asked. The exception in the session-start rule above applies here too: when the invoking message *carries* a question (`/finance-tutor how do I-Bonds work?`), that question is entry `1.`, logged without the `/finance-tutor` prefix.
+  - **Meta-requests go only here, never to `transcript.md`.** A request about the files ("what have you written so far?", "regenerate the report") is session bookkeeping, not a finance exchange. `transcript.md` stays a clean Q&A record because `report.md` is compiled from it — file-management chatter in the transcript would surface as content in the report.
 - Chat responses should match the level of detail written to `transcript.md`, not a condensed summary. 
   - Having details in both the response and `transcript.md` allows a user to review what is being written to the transcript file without checking manually, and helps if they wish to ask follow up questions.
 
@@ -115,21 +135,22 @@ While the session is open:
 
 1. Skill is invoked, a new session begins → immediately reply with the session-start disclaimer alone (see "The Rules"), before the user has asked anything — unless that invoking message already contains their first question, in which case the disclaimer leads that same reply instead
 2. User sends any message (finance question, clarification, follow-up, or meta-request)
-3. Prompt appended to `prompt_log.md`
+3. Prompt appended to `prompt_log.md` — numbering starts at `1.` with this first real prompt, not with the invocation
 4. If a finance question: Claude answers with references, Q&A pair appended to `transcript.md`
 5. If a clarification or follow-up: Claude answers and appends the exchange to `transcript.md` with any relevant references
-6. (Optionally) Claude generates `report.md` with footnotes
-7. User ends the session ("end session") → log that message, summarize the files, then stop writing to `prompt_log.md` and `transcript.md` entirely
+6. If a meta-request about the files: Claude answers in chat only — logged in step 3, but nothing appended to `transcript.md`
+7. (Optionally) Claude generates `report.md` with footnotes, written whole with `Write`
+8. User ends the session ("end session") → log that message, summarize the files, then stop writing to `prompt_log.md` and `transcript.md` entirely
 
-After step 7, the loop is over. Later messages get ordinary responses with no file writes until the user starts a new session.
+After step 8, the loop is over. Later messages get ordinary responses with no file writes until the user starts a new session.
 
 ## File Roles
 
 | File | Role |
 |---|---|
-| `transcript.md` | Append-only log of every Q&A exchange |
-| `prompt_log.md` | Append-only log of every prompt |
-| `report.md` | Generated on demand — compiled narrative with inline footnotes and a full reference list |
+| `transcript.md` | Append-only log of every Q&A exchange. Finance content only — meta-requests about the files do not belong here |
+| `prompt_log.md` | Append-only log of every prompt after the invocation, including meta-requests |
+| `report.md` | Generated on demand — compiled narrative with inline footnotes and a full reference list. Regenerated whole with `Write`; `append.py` rejects it by design |
 
 ## Conventions
 

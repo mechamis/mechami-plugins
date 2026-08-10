@@ -1,1 +1,8 @@
 .DS_Store
+
+# Eval run outputs - regenerated per iteration, not part of the distributed plugin
+*-workspace/
+
+# Python bytecode
+__pycache__/
+*.pyc

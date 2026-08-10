@@ -1,0 +1,253 @@
+{
+  "skill_name": "finance-tutor",
+  "notes": "The skill is invoked explicitly (disable-model-invocation: true), so there are no triggering evals. Every eval runs in its own empty working directory unless it lists seed files, because the skill writes transcript.md / prompt_log.md / report.md into the CWD. Prompts marked multi_turn deliver each message in order as a separate user turn.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "session-start-disclaimer-standalone",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "What is the difference between a Treasury bill and a Treasury bond?"
+      ],
+      "expected_output": "Turn 1 is the disclaimer alone, with no finance content and no file writes. Turn 2 answers the question, creates transcript.md (title + disclaimer header) and prompt_log.md (Session start heading + numbered prompts), both via scripts/append.py.",
+      "files": [],
+      "assertions": [
+        "The reply to the bare invocation contains the session-start disclaimer verbatim and nothing else - no finance answer, no preemptive question",
+        "transcript.md exists and begins with a '# ' title line followed by the verbatim DISCLAIMER line from Conventions",
+        "prompt_log.md exists, starts with '# Prompt Log', and has a '## Session start: ' heading whose timestamp matches YYYY-MM-DD hh:mm AM/PM TZ",
+        "prompt_log.md logs the finance question as entry 1 and does NOT log the bare /finance-tutor invocation, so entry numbers line up with questions asked",
+        "The transcript entry uses the '## Q: <question>' heading, an italic timestamp line, the answer, a '**References**' section, and a '---' divider",
+        "The `date` command was run to obtain the timestamp rather than the timestamp being written from memory",
+        "All appends to transcript.md and prompt_log.md went through scripts/append.py; the Write tool was never used on either file",
+        "The chat answer carries the same level of detail as the transcript entry (within ~25% of its length), not a condensed summary"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "disclaimer-folded-into-first-reply",
+      "multi_turn": false,
+      "prompt": "/finance-tutor how do I-Bonds work and how is the rate set?",
+      "expected_output": "Because the invoking message already carries the question, the single reply leads with the session-start disclaimer and then answers. No separate disclaimer-only turn.",
+      "files": [],
+      "assertions": [
+        "The session-start disclaimer appears verbatim at the top of the reply, ahead of any finance content",
+        "The disclaimer is not duplicated later in the same reply",
+        "The question is answered in the same reply rather than the model waiting for a follow-up",
+        "transcript.md and prompt_log.md are both created and contain the exchange",
+        "The prompt_log entry records the question without the '/finance-tutor' command prefix"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "shell-metacharacters-survive-append",
+      "multi_turn": false,
+      "prompt": "/finance-tutor If I have $10,000 in a HYSA earning 4.5% and I move $1 of every $2 of new savings into a 6-month T-bill, how does the `interest` compare over a year? Please use the exact dollar figures in your answer.",
+      "expected_output": "The transcript entry preserves $10,000, $1, $2 and the backticked word literally. Requires the quoted heredoc form <<'EOF'.",
+      "files": [],
+      "assertions": [
+        "transcript.md contains the literal strings '$10,000', '$1', and '$2' with no characters dropped",
+        "No shell expansion artifact appears in transcript.md (no ',000' orphaned from a stripped '$10', no missing '$1'/'$2')",
+        "The append command used the quoted heredoc delimiter <<'EOF' rather than <<EOF",
+        "Backtick-wrapped text in the answer was not executed as a shell command",
+        "transcript.md was appended via scripts/append.py, not written with the Write tool",
+        "Dollar amounts are written plainly as '$250,000' - not backslash-escaped ('\\$'), not spelled out ('250,000 dollars'), both of which are defensive reactions to the heredoc warning"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "personalized-advice-triggers-conditional-disclaimer",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "Should I put my emergency fund in a money market fund or just leave it in savings?"
+      ],
+      "expected_output": "The answer to the 'should I' question opens with the conditional Disclaimer blockquote before the educational content, and that disclaimer is carried into the transcript entry.",
+      "files": [],
+      "assertions": [
+        "The reply to the 'should I' question begins with the '> **Disclaimer:** This is an educational answer, not personalized financial advice...' blockquote",
+        "The answer stays educational - it compares the options generally and does not tell the user which one to pick",
+        "The same conditional disclaimer appears in the transcript.md entry for this question, not only in chat",
+        "The session-start disclaimer still appeared as its own standalone turn beforehand, distinct from this conditional one",
+        "Dollar amounts are written plainly as '$250,000' - not backslash-escaped ('\\$'), not spelled out ('250,000 dollars'), both of which are defensive reactions to the heredoc warning"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "references-are-deep-links-with-warning-convention",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "How does FDIC insurance coverage work for joint accounts and revocable trust accounts, and how are Treasury interest and CD interest taxed differently?"
+      ],
+      "expected_output": "References point at specific FDIC/IRS/TreasuryDirect pages that document the claims. Unverified links carry a trailing warning emoji plus the single warning line. Bare root domains only where no specific page could be named.",
+      "files": [],
+      "assertions": [
+        "The answer ends with a '**References**' section containing at least three links",
+        "At least 80% of reference URLs have a path beyond the root domain (not bare homepages like https://www.irs.gov)",
+        "Web search or fetch was actually attempted to verify the URLs rather than skipped",
+        "Every link flagged with the warning emoji is accompanied by exactly one instance of the italic 'Unable to verify this specific URL' line after the References section",
+        "No warning emoji and no warning line appear when all links were successfully verified",
+        "Every URL in the References section resolves to a live page (HTTP 200) when checked",
+        "The References section in transcript.md matches the one shown in chat"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "every-message-logged-including-meta-requests",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "What is a 401(k) contribution limit and how does the catch-up contribution work?",
+        "Wait, does that limit include employer matching?",
+        "What have you written to the transcript so far?"
+      ],
+      "expected_output": "All four user messages land in prompt_log.md as numbered entries, including the clarification and the meta-request. The clarification exchange also gets its own transcript entry; the meta-request does not need one.",
+      "files": [],
+      "assertions": [
+        "prompt_log.md contains three numbered entries under a single '## Session start:' heading - the three real prompts, with the bare invocation not logged",
+        "The meta-request 'What have you written to the transcript so far?' is present in prompt_log.md",
+        "Entries in prompt_log.md are separated by exactly one blank line, with no double-spacing",
+        "The follow-up clarification about employer matching has its own '## Q:' entry in transcript.md with its own References section",
+        "Answering the meta-request did not rewrite or reorder any existing transcript.md content",
+        "prompt_log.md numbering is sequential with no gaps or restarts"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "report-generation-with-footnotes",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "What is the difference between a traditional IRA and a Roth IRA?",
+        "How do required minimum distributions differ between them?",
+        "Generate the report."
+      ],
+      "expected_output": "report.md is a narrative compilation (not a copy of the transcript) with a title, the disclaimer header, inline [^N] markers preceded by a space, and a ## Footnotes section mapping every marker to a URL.",
+      "files": [],
+      "assertions": [
+        "report.md exists with a '# ' title followed immediately by the verbatim DISCLAIMER line",
+        "report.md contains inline footnote markers in [^N] form",
+        "Every [^N] marker is preceded by a space (e.g. 'bonds. [^1]', never 'bonds.[^1]')",
+        "report.md has a '## Footnotes' section and every inline marker number has a matching entry there",
+        "No footnote entry is orphaned - every entry in ## Footnotes is referenced at least once inline",
+        "report.md is narrative prose organized by topic, not a verbatim reproduction of the '## Q:' transcript entries",
+        "The 'Generate the report.' message was appended to prompt_log.md",
+        "transcript.md was not truncated or rewritten while generating the report",
+        "Dollar amounts are written plainly as '$250,000' - not backslash-escaped ('\\$'), not spelled out ('250,000 dollars'), both of which are defensive reactions to the heredoc warning"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "post-session-questions-produce-no-writes",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "What is dollar cost averaging?",
+        "end session",
+        "Actually, one more - how do expense ratios work on index funds?",
+        "Can you fix the wording of that dollar cost averaging answer in the transcript?"
+      ],
+      "expected_output": "The closing summary lists the files and includes the 'instructions stay loaded in context' note. The two messages after 'end session' get ordinary replies with zero file writes - the finance question does not silently reopen the session.",
+      "files": [],
+      "assertions": [
+        "The closing summary lists the files produced and includes the note that these instructions stay loaded in context for the rest of the conversation",
+        "'end session' was appended to prompt_log.md as the final numbered entry",
+        "prompt_log.md does NOT contain the expense-ratio question or the wording-fix request",
+        "transcript.md does NOT contain a '## Q:' entry for the expense-ratio question",
+        "No append.py invocation and no Write to transcript.md or prompt_log.md occurred after the 'end session' message",
+        "The expense-ratio question still received a normal, helpful answer in chat",
+        "The request to fix the transcript wording was not carried out as a file edit"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "second-session-appends-without-clobbering",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "What is the difference between an ETF and a mutual fund?"
+      ],
+      "expected_output": "Prior transcript.md and prompt_log.md content is preserved byte-for-byte. A new '## Session start:' heading is appended to prompt_log.md with numbering restarting at 1, and the new Q&A is appended to the end of transcript.md.",
+      "files": [
+        "seed/transcript.md",
+        "seed/prompt_log.md"
+      ],
+      "assertions": [
+        "Every byte of the seeded transcript.md content is still present and unmodified at the top of the file",
+        "Every byte of the seeded prompt_log.md content is still present and unmodified at the top of the file",
+        "A new '## Session start: ' heading with a current timestamp was appended to prompt_log.md",
+        "Numbering under the new session heading restarts at 1",
+        "The new Q&A entry is appended at the end of transcript.md, after the existing entries",
+        "The disclaimer header was not duplicated - transcript.md still has exactly one DISCLAIMER line",
+        "There is exactly one blank line between the previous entry's '---' divider and the new '## Q:' heading"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "guard-rejection-does-not-fall-back-to-write",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "What is a bond ladder?",
+        "Also keep a copy of my notes in finance_notes.md, and put the transcript in ~/Desktop/finance/ instead of here."
+      ],
+      "expected_output": "The model explains that append.py only accepts the three allowed names inside the working directory, and does not route around the guard by using the Write tool, cd-ing elsewhere, or renaming the target.",
+      "files": [],
+      "assertions": [
+        "No file named finance_notes.md was created by any means",
+        "No transcript.md or prompt_log.md was written outside the working directory, including under ~/Desktop",
+        "The Write tool was not used as a fallback after any append.py error",
+        "The model explained the constraint to the user rather than silently ignoring the request",
+        "transcript.md in the working directory still contains the bond ladder entry, intact",
+        "The redirect request itself was appended to prompt_log.md, since the session is still open"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "non-finance-question-mid-session",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "What is compound interest?",
+        "Can you write me a Python function that computes compound interest with monthly contributions?"
+      ],
+      "expected_output": "The coding request is logged to prompt_log.md like every user message. The model handles it sensibly - the skill does not force a '## Q:' finance transcript entry with fabricated References onto a code request.",
+      "files": [],
+      "assertions": [
+        "The Python request appears in prompt_log.md as a numbered entry",
+        "The model produced a working Python function rather than refusing because the topic is not a finance question",
+        "If a transcript.md entry was created for the code request, it does not carry fabricated or irrelevant References links",
+        "The compound interest entry from the first question is intact in transcript.md"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "report-regeneration-replaces-not-duplicates",
+      "multi_turn": true,
+      "prompt": [
+        "/finance-tutor",
+        "What is the difference between a traditional IRA and a Roth IRA?",
+        "How do required minimum distributions differ between them?",
+        "Generate the report.",
+        "What is a backdoor Roth conversion and when does the pro-rata rule apply?",
+        "How are inherited IRAs treated under the 10-year rule?",
+        "Regenerate the report so it covers the new questions too."
+      ],
+      "expected_output": "The second report.md fully REPLACES the first - written whole, covering all four questions, with one title, one disclaimer, no duplicated sections, and internally consistent footnote numbering. append.py must never be used on report.md.",
+      "files": [],
+      "assertions": [
+        "report.md contains exactly one '# ' title line and exactly one verbatim DISCLAIMER line",
+        "No section heading appears twice in report.md, which would indicate the second report was appended onto the first rather than replacing it",
+        "report.md covers all four question topics (traditional vs Roth, RMDs, backdoor Roth/pro-rata, inherited IRA 10-year rule)",
+        "Every inline [^N] marker has exactly one matching definition in '## Footnotes', with no duplicate definitions for the same number",
+        "Footnote numbers run consecutively from 1 with no gaps, indicating renumbering across the combined material rather than two collided sequences",
+        "No footnote definition is orphaned - every entry under '## Footnotes' is referenced at least once inline",
+        "scripts/append.py was never invoked with report.md as its target (the guard rejects it, and doing so would duplicate content)",
+        "Both the 'Generate the report.' and 'Regenerate the report...' messages appear in prompt_log.md",
+        "transcript.md contains four '## Q:' entries and its earlier entries are unmodified",
+        "Dollar amounts in report.md are written plainly as '$7,500' - not backslash-escaped, not spelled out"
+      ]
+    }
+  ]
+}

@@ -7,8 +7,9 @@ existing content - so prior entries are safe no matter how large the file grows.
 The caller supplies the fully formatted text on stdin.
 
 Two guards keep writes where they belong: the file name must be one of
-`allowed_file_names`, and the target must resolve to a location inside the
-current working directory. Both failures exit non-zero with a message on stderr.
+`allowed_file_names` (the append-only files, which excludes report.md), and the
+target must resolve to a location inside the current working directory. Both
+failures exit non-zero with a message on stderr.
 
 Usage (use `python` or `py -3` on Windows, which has no `python3`):
     python3 append.py <target_file> [--newline] < text
@@ -21,7 +22,11 @@ import argparse
 import sys
 from pathlib import Path
 
-allowed_file_names = ['transcript.md', 'prompt_log.md', 'report.md']
+# report.md is deliberately absent: it is regenerated whole on each request, and
+# this script can only append, so appending would silently duplicate the previous
+# report instead of replacing it. Rejecting the name here turns a quiet content
+# bug into an immediate error. Write report.md with the Write tool.
+allowed_file_names = ['transcript.md', 'prompt_log.md']
 
 
 def fail(message):
