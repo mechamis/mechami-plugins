@@ -12,6 +12,7 @@ Writes grading.json into each eval's with_skill/ directory.
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 DISCLAIMER = ("**DISCLAIMER:** This information is for educational purposes only and "
@@ -150,17 +151,102 @@ def quoted_heredoc(r):
               f"{len(quoted)} quoted / {len(unquoted)} unquoted, across {len(cmds)} append command(s)")
 
 
-def detail_parity(r, turn):
-    """Chat answer should not be a condensed version of the transcript entry."""
+CONDITIONAL_DISCLAIMER = re.compile(
+    r"^>?\s*\*\*Disclaimer:\*\*.*$", re.M | re.I)
+
+# Ratios below these count as a violation. Coverage is the strict one: it is what
+# catches an entry whose content was never shown. Precision is looser because a
+# reply may legitimately carry a sentence of framing around the answer.
+COVERAGE_MIN = 0.75
+PRECISION_MIN = 0.50
+
+
+def content_tokens(text):
+    """Content words, with the noise that legitimately differs between the two sides removed.
+
+    The transcript entry carries a heading, timestamp, and footnote markers the
+    chat reply does not, and either side may wrap the same words in different
+    emphasis characters. Words shorter than four characters are dropped so that
+    articles and prepositions cannot prop up the overlap.
+    """
+    t = re.sub(r"```.*?```", " ", text or "", flags=re.S)
+    t = re.sub(r"\(https?://[^)\s]+\)", " ", t)
+    t = re.sub(r"\[\^\d+\]:?", " ", t)
+    t = re.sub(r"[^\w\s]", " ", t)
+    return Counter(w for w in t.lower().split() if len(w) >= 4)
+
+
+def answer_body(text):
+    """An entry or reply stripped to its answer: no references block, no disclaimers."""
+    body = re.split(r"^\*\*References\*\*", text or "", flags=re.M)[0]
+    body = body.replace(DISCLAIMER, " ")
+    body = CONDITIONAL_DISCLAIMER.sub(" ", body)
+    return re.sub(rf"^_{TS}_\s*$", " ", body, flags=re.M)
+
+
+def transcript_entries(text):
+    """(question, answer-body) per entry, in the order they were appended."""
+    out = []
+    for chunk in re.split(r"^## Q: ", text or "", flags=re.M)[1:]:
+        question, _, rest = chunk.partition("\n")
+        out.append((question.strip(), answer_body(rest).strip()))
+    return out
+
+
+def detail_parity(r, turn, entry=None):
+    """The chat answer and the transcript entry it produced must be the same text.
+
+    Deliberately not a length comparison. A reply that narrates progress
+    ("appended that to the transcript") while composing the real answer straight
+    into the heredoc can match a long entry on size while sharing almost none of
+    its content - which is exactly the failure this exists to catch. Comparing
+    content-word multisets catches it in both directions: coverage is the share of
+    the stored entry that was actually shown to the user, precision the share of
+    the chat text that was actually written to the file.
+
+    `entry` is the 1-based index of the transcript entry this turn produced. When
+    omitted, the best-matching entry is used - fine for single-question evals,
+    but pass it explicitly in multi-turn runs so a turn cannot be scored against
+    a different turn's entry.
+    """
     reply = r.reply(turn)
     if not reply or not r.transcript:
         return ok(False, "missing chat_replies.md or transcript.md")
-    entries = re.split(r"^## Q: ", r.transcript, flags=re.M)[1:]
+    entries = transcript_entries(r.transcript)
     if not entries:
         return ok(False, "no transcript entries")
-    entry = max(entries, key=len)
-    ratio = len(reply) / max(len(entry), 1)
-    return ok(0.7 <= ratio <= 1.6, f"chat {len(reply)} chars vs transcript {len(entry)} chars, ratio {ratio:.2f}")
+
+    chat = content_tokens(answer_body(reply))
+    if not chat:
+        return ok(False, f"turn {turn} reply has no content words")
+
+    def score(stored):
+        shared = sum((chat & stored).values())
+        return (shared / max(sum(stored.values()), 1),
+                shared / max(sum(chat.values()), 1))
+
+    if entry is not None:
+        if entry > len(entries):
+            return ok(False, f"turn {turn} expects transcript entry {entry}, only {len(entries)} present")
+        question, body = entries[entry - 1]
+        coverage, precision = score(content_tokens(body))
+    else:
+        scored = [(score(content_tokens(b)), q) for q, b in entries]
+        (coverage, precision), question = max(scored, key=lambda s: s[0][0])
+
+    return ok(coverage >= COVERAGE_MIN and precision >= PRECISION_MIN,
+              f"coverage {coverage:.2f} / precision {precision:.2f} "
+              f"vs entry '{question[:45]}' (chat {len(reply)} chars)")
+
+
+def detail_parity_all(r, pairs):
+    """One assertion covering every Q&A turn of a multi-turn run.
+
+    `pairs` maps turn number to the transcript entry that turn produced.
+    """
+    results = [(t, detail_parity(r, t, e)) for t, e in pairs]
+    return ok(all(passed for _, (passed, _) in results),
+              "; ".join(f"turn {t} {'ok' if p else 'FAIL'}: {ev}" for t, (p, ev) in results))
 
 
 def urls_in(text):
@@ -423,6 +509,9 @@ def eval_11(r):
         ok(gen >= 2, f"{gen} report-related prompt_log entries: {[e[1][:40] for e in entries]}"),
         ok(len(qs) == 4, f"{len(qs)} transcript Q&A entries"),
         ok(not esc and not spelled, f"{len(esc)} escaped, {len(spelled)} spelled-out"),
+        # Turns 1, 4 and 7 are the invocation and the two report requests - they
+        # produce no transcript entry, so only the four question turns are paired.
+        detail_parity_all(r, [(2, 1), (3, 2), (5, 3), (6, 4)]),
     ]
 
 

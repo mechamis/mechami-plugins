@@ -246,7 +246,8 @@
         "scripts/append.py was never invoked with report.md as its target (the guard rejects it, and doing so would duplicate content)",
         "Both the 'Generate the report.' and 'Regenerate the report...' messages appear in prompt_log.md",
         "transcript.md contains four '## Q:' entries and its earlier entries are unmodified",
-        "Dollar amounts in report.md are written plainly as '$7,500' - not backslash-escaped, not spelled out"
+        "Dollar amounts in report.md are written plainly as '$7,500' - not backslash-escaped, not spelled out",
+        "Each answer shown in chat is the same text appended to transcript.md, not a condensed summary with the full answer composed only into the append.py heredoc"
       ]
     }
   ]

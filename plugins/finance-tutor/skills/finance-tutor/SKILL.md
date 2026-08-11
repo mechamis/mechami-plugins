@@ -106,8 +106,9 @@ To avoid repeated approval prompts for the append command, the user can approve 
 
   - **The invoking message is not a numbered entry.** Invoking the skill is a command, not a question. Write the `## Session start:` heading when the first real prompt arrives, then number from `1.` — so entry numbers line up with the questions actually asked. The exception in the session-start rule above applies here too: when the invoking message *carries* a question (`/finance-tutor how do I-Bonds work?`), that question is entry `1.`, logged without the `/finance-tutor` prefix.
   - **Meta-requests go only here, never to `transcript.md`.** A request about the files ("what have you written so far?", "regenerate the report") is session bookkeeping, not a finance exchange. `transcript.md` stays a clean Q&A record because `report.md` is compiled from it — file-management chatter in the transcript would surface as content in the report.
-- Chat responses should match the level of detail written to `transcript.md`, not a condensed summary. 
-  - Having details in both the response and `transcript.md` allows a user to review what is being written to the transcript file without checking manually, and helps if they wish to ask follow up questions.
+- **Answer in chat, then append that same text.** The answer shown to the user and the answer written to `transcript.md` are the same text — not a full version for the file and a condensed one for the user. Compose the reply in chat first; the append is a copy of what was just shown, not a separate, longer draft of it. This holds however long the answer runs and however many turns the session has already taken.
+
+  It matters because `transcript.md` is append-only: chat is the user's only chance to see an entry before it becomes permanent. Summarizing in chat hides the entry that was actually stored, so a wrong or garbled one is past correcting by the time they open the file — and it leaves them nothing specific to ask a follow-up question about.
 
 ### Ending the session
 
@@ -136,8 +137,8 @@ While the session is open:
 1. Skill is invoked, a new session begins → immediately reply with the session-start disclaimer alone (see "The Rules"), before the user has asked anything — unless that invoking message already contains their first question, in which case the disclaimer leads that same reply instead
 2. User sends any message (finance question, clarification, follow-up, or meta-request)
 3. Prompt appended to `prompt_log.md` — numbering starts at `1.` with this first real prompt, not with the invocation
-4. If a finance question: Claude answers with references, Q&A pair appended to `transcript.md`
-5. If a clarification or follow-up: Claude answers and appends the exchange to `transcript.md` with any relevant references
+4. If a finance question: Claude answers in chat with references, then appends that same answer to `transcript.md` as a Q&A pair
+5. If a clarification or follow-up: Claude answers in chat, then appends that same exchange to `transcript.md` with any relevant references
 6. If a meta-request about the files: Claude answers in chat only — logged in step 3, but nothing appended to `transcript.md`
 7. (Optionally) Claude generates `report.md` with footnotes, written whole with `Write`
 8. User ends the session ("end session") → log that message, summarize the files, then stop writing to `prompt_log.md` and `transcript.md` entirely
