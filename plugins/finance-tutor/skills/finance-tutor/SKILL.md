@@ -1,6 +1,6 @@
 ---
 name: finance-tutor
-description: FOR EDUCATIONAL PURPOSES ONLY — not financial advice. This skill sets up a finance Q&A learning workflow. The user asks finance questions, Claude answers them educationally with references, and every exchange is appended to a persistent transcript. A compiled report with footnotes can be generated at any time.
+description: FOR EDUCATIONAL PURPOSES ONLY — not financial advice. This skill sets up a finance Q&A learning workflow. The user asks finance questions, each one is answered educationally with references, and every exchange is appended to a persistent transcript. A compiled report with footnotes can be generated at any time.
 disable-model-invocation: true
 ---
 
@@ -10,7 +10,9 @@ disable-model-invocation: true
 
 **FOR EDUCATIONAL PURPOSES ONLY. This skill does not provide personalized financial advice. All answers are intended for learning and general understanding only. For decisions involving your specific financial situation, consult a licensed financial advisor.**
 
-This skill sets up a finance Q&A learning workflow. The user asks finance questions, Claude answers them educationally with authoritative references, and every exchange is appended to a persistent transcript. A compiled report with footnotes can be generated at any time.
+This skill sets up a finance Q&A learning workflow. The user asks finance questions, each one is answered educationally with authoritative references, and every exchange is appended to a persistent transcript. A compiled report with footnotes can be generated at any time.
+
+**Explicit invocation only.** This skill runs when the user invokes it, and not otherwise. Do not start a session, write any of these files, or apply these rules just because a finance question came up in conversation. The frontmatter says the same thing, but a host that doesn't recognize that key would otherwise start a session the user never asked for — and the session-start disclaimer below depends on there being a real invocation moment to attach to.
 
 **File location:** Create and maintain all files (`transcript.md`, `prompt_log.md`, `report.md`) in the current working directory. For the two append-only files this is not just a convention — `scripts/append.py` enforces it, and rejects anything else (see "Where the script will write" below).
 
@@ -32,13 +34,15 @@ Apply these three options **in order**. Do not skip ahead to a later option beca
    - **The page is gone (404).** The link is simply wrong. Search for the page that actually documents the claim and cite that instead — a verified correct link beats a flagged broken one, and shipping a known-404 under a warning misuses the convention.
    - **The fetch was refused (403, timeout, blocked domain).** The page likely exists and you just cannot reach it. This is what option 2 is for: keep the specific URL and flag it. A domain-scoped search that returns the same page and title is reasonable corroboration.
 
+   If this environment has no web search or fetch tool at all, that is precisely the case option 2 exists for — give the specific URL and flag it. Missing tools are a reason to reach for the warning, not a reason to retreat to a homepage.
+
 3. **Fall back to a root or well-known section domain** (e.g., `https://www.irs.gov`, `https://www.treasurydirect.gov`, `https://www.sec.gov`, `https://investor.gov`) **only when 1 and 2 both fail** — that is, when no specific page plausibly exists for the topic, or you cannot name a specific URL without guessing at its path.
 
 Never fabricate a plausible-looking URL. Option 2 covers *unverified* links you have real grounds to believe in (a page you know exists, whose exact path you could not confirm); it does not license inventing paths. When you genuinely have no candidate URL, use option 3.
 
 Silently downgrading to option 3 defeats the ⚠️ convention: its purpose is to show the reader *which* links are uncertain, so a homepage with no signal is worse than a specific link that is honestly flagged.
 
-**Append-only files:** `transcript.md` and `prompt_log.md` are append-only — new entries are *added to the end*, and existing entries are never rewritten. This matters because the value of these files is fidelity: a full-file `Write` would force you to reproduce all prior content from context on every update, which risks silently dropping or altering earlier entries and gets more expensive as the file grows. Appending sidesteps that entirely.
+**Append-only files:** `transcript.md` and `prompt_log.md` are append-only — new entries are *added to the end*, and existing entries are never rewritten. This matters because the value of these files is fidelity: rewriting the file whole would force you to reproduce all prior content from context on every update, which risks silently dropping or altering earlier entries and gets more expensive as the file grows. Appending sidesteps that entirely.
 
 Use the bundled helper `scripts/append.py` to append. It reads the text to append from stdin and opens the target in append mode, so it structurally cannot truncate or overwrite prior content:
 
@@ -65,7 +69,7 @@ EOF
 
 - `\$7,500` — the quotes already prevented expansion, so the backslash is passed through literally and the file stores `\$7,500`. Markdown renders that as `$7,500`, so it survives a visual check while the stored text is wrong.
 - `7,500 dollars` — avoiding the character altogether. The transcript is meant to read like the answer you gave, and spelled-out amounts are worse writing.
-- Switching to `Write` because the heredoc feels risky — that discards the append-only guarantee entirely.
+- Switching to a whole-file write because the heredoc feels risky — that discards the append-only guarantee entirely.
 
 With `<<'EOF'` in place, write the body exactly as it should appear in the finished file: plain `$7,500`, ordinary backticks, no escaping and no rephrasing. Quote the delimiter *or* escape the content, never both — and quoting the delimiter is the one to choose.
 
@@ -80,9 +84,9 @@ Pipe the fully formatted entry (matching the templates below) on stdin. Pass `--
 
 Either failure exits non-zero and prints a line beginning with `error:` on stderr explaining which guard tripped.
 
-Treat that error as a signal that the *target* was wrong, and fix the path. Do not route around it by falling back to a full-file `Write`, by `cd`-ing elsewhere first, or by retrying under a different name — those defeat the append-only guarantee described above, which is the entire reason this helper exists.
+Treat that error as a signal that the *target* was wrong, and fix the path. Do not route around it by falling back to a whole-file write, by `cd`-ing elsewhere first, or by retrying under a different name — those defeat the append-only guarantee described above, which is the entire reason this helper exists.
 
-To avoid repeated approval prompts for the append command, the user can approve it once: when the permission prompt first appears, choosing the "don't ask again" option lets Claude Code record a matching allow rule automatically. That is more reliable than hand-writing a permission rule, because the script's real invocation path includes the plugin version and can change between releases. Do not append with a full-file `Write`; use `Write` only for `report.md`, which is regenerated whole each time.
+If the host tool asks for approval before each append, the user can usually approve the command once instead of per entry — many tools offer a "don't ask again" choice on the approval prompt, which records a matching allow rule automatically. That is more reliable than hand-writing a permission rule, because the script's real invocation path includes the plugin version and can change between releases. Never append by rewriting the file whole; `report.md` is the only file written whole, and it is regenerated in full each time.
 
 ## The Rules
 
@@ -103,14 +107,14 @@ To avoid repeated approval prompts for the append command, the user can approve 
 
   > **Disclaimer:** This is an educational answer, not personalized financial advice. For decisions involving your specific financial situation, please consult a licensed financial advisor.
 
-- Claude will automatically create `transcript.md` on the first question if it does not already exist.
+- Automatically create `transcript.md` on the first question if it does not already exist.
 - Each answer will include a References section (see above) and be appended to `transcript.md`.
 - When prompted to generate a report, create a detailed report that compiles this information, with footnotes throughout the content.
 - Append **every user message** during the session to `prompt_log.md` — including clarification questions, follow-ups, and meta-requests (e.g., "update the transcript"). Create the file if it does not exist. This applies only while the session is open; see "Ending the session" below.
 
   Two boundaries on "every user message", because both are otherwise judgment calls that different sessions resolve differently — and a log whose numbering depends on who ran it is not the faithful record this file exists to be:
 
-  - **The invoking message is not a numbered entry.** Invoking the skill is a command, not a question. Write the `## Session start:` heading when the first real prompt arrives, then number from `1.` — so entry numbers line up with the questions actually asked. The exception in the session-start rule above applies here too: when the invoking message *carries* a question (`/finance-tutor how do I-Bonds work?`), that question is entry `1.`, logged without the `/finance-tutor` prefix.
+  - **The invoking message is not a numbered entry.** Invoking the skill is a command, not a question. Write the `## Session start:` heading when the first real prompt arrives, then number from `1.` — so entry numbers line up with the questions actually asked. The exception in the session-start rule above applies here too: when the invoking message *carries* a question (e.g. `/finance-tutor how do I-Bonds work?` on a host with slash commands), that question is entry `1.`, logged with any invocation prefix stripped so the entry reads as the user's plain question.
   - **Meta-requests go only here, never to `transcript.md`.** A request about the files ("what have you written so far?", "regenerate the report") is session bookkeeping, not a finance exchange. `transcript.md` stays a clean Q&A record because `report.md` is compiled from it — file-management chatter in the transcript would surface as content in the report.
 - **Answer in chat, then append that same text.** The answer shown to the user and the answer written to `transcript.md` are the same text — not a full version for the file and a condensed one for the user. Compose the reply in chat first; the append is a copy of what was just shown, not a separate, longer draft of it. This holds however long the answer runs and however many turns the session has already taken.
 
@@ -143,10 +147,10 @@ While the session is open:
 1. Skill is invoked, a new session begins → immediately reply with the session-start disclaimer alone (see "The Rules"), before the user has asked anything — unless that invoking message already contains their first question, in which case the disclaimer leads that same reply instead
 2. User sends any message (finance question, clarification, follow-up, or meta-request)
 3. Prompt appended to `prompt_log.md` — numbering starts at `1.` with this first real prompt, not with the invocation
-4. If a finance question: Claude answers in chat with references, then appends that same answer to `transcript.md` as a Q&A pair
-5. If a clarification or follow-up: Claude answers in chat, then appends that same exchange to `transcript.md` with any relevant references
-6. If a meta-request about the files: Claude answers in chat only — logged in step 3, but nothing appended to `transcript.md`
-7. (Optionally) Claude generates `report.md` with footnotes, written whole with `Write`
+4. If a finance question: Answer in chat with references, then append that same answer to `transcript.md` as a Q&A pair
+5. If a clarification or follow-up: Answer in chat, then append that same exchange to `transcript.md` with any relevant references
+6. If a meta-request about the files: Answer in chat only — logged in step 3, but nothing appended to `transcript.md`
+7. (Optionally) Generate `report.md` with footnotes — written whole, never appended
 8. User ends the session ("end session") → log that message, summarize the files, then stop writing to `prompt_log.md` and `transcript.md` entirely
 
 After step 8, the loop is over. Later messages get ordinary responses with no file writes until the user starts a new session.
@@ -157,11 +161,11 @@ After step 8, the loop is over. Later messages get ordinary responses with no fi
 |---|---|
 | `transcript.md` | Append-only log of every Q&A exchange. Finance content only — meta-requests about the files do not belong here |
 | `prompt_log.md` | Append-only log of every prompt after the invocation, including meta-requests |
-| `report.md` | Generated on demand — compiled narrative with inline footnotes and a full reference list. Regenerated whole with `Write`; `append.py` rejects it by design |
+| `report.md` | Generated on demand — compiled narrative with inline footnotes and a full reference list. Regenerated whole: the previous version is replaced in full, never appended to; `append.py` rejects it by design |
 
 ## Conventions
 
-- **Transcript format:** Each entry uses `## Q: <question>` as a heading, immediately followed by a `_<timestamp>_` line, then the answer, a `**References**` section with links, and a `---` divider. End the entry with a blank line after the divider so that when the next entry is appended there is a blank line between the `---` and the following `## Q:` heading — this keeps entries cleanly separated and avoids the divider being parsed as a heading underline. The timestamp uses the same `YYYY-MM-DD hh:mm AM/PM TZ` format as the Prompt Log, obtained via `date +"%Y-%m-%d %I:%M %p %Z"`. Template (note the trailing blank line):
+- **Transcript format:** Each entry uses `## Q: <question>` as a heading, immediately followed by a `_<timestamp>_` line, then the answer, a `**References**` section with links, and a `---` divider. End the entry with a blank line after the divider so that when the next entry is appended there is a blank line between the `---` and the following `## Q:` heading — this keeps entries cleanly separated and avoids the divider being parsed as a heading underline. The timestamp uses the same `YYYY-MM-DD hh:mm AM/PM TZ` format as the Prompt Log — see "Reading the timestamp" below for how to obtain it. Template (note the trailing blank line):
 
   ```
   ## Q: <question>
@@ -179,6 +183,15 @@ After step 8, the loop is over. Later messages get ordinary responses with no fi
   ```
 - **Report format:** Narrative sections with `[^N]` inline footnotes and a `## Footnotes` section at the end mapping each number to a URL.
   - Include a space between the text and the footnote marker (e.g. `... Treasury bonds. [^1]`).
+- **Reading the timestamp:** Read the real current local time from the system rather than writing a timestamp from memory. A remembered timestamp is a fabricated one, and since these files are append-only the fabrication is permanent — nobody can tell afterward which entries were actually recorded when. The format is `YYYY-MM-DD hh:mm AM/PM TZ`, local time with the local timezone abbreviation (e.g. EDT).
+
+  In bash/zsh, use `date +"%Y-%m-%d %I:%M %p %Z"`. PowerShell has no such `date` — there it aliases `Get-Date`, which rejects `+format` — so use Python instead, which is already required by this skill and therefore available wherever the append helper runs:
+
+  ```bash
+  python3 -c "import time; print(time.strftime('%Y-%m-%d %I:%M %p %Z'))"
+  ```
+
+  The two produce identical output. The same interpreter-name caveat applies as above: `python` or `py -3` on Windows.
 - **Disclaimer header:** The following disclaimer must appear at the top of both `transcript.md` and `report.md`, immediately after the `# <Title>` heading:
 
   ```
@@ -187,7 +200,7 @@ After step 8, the loop is over. Later messages get ordinary responses with no fi
 
 ## Prompt Log format
 
-Session start should have a timestamp in `YYYY-MM-DD hh:mm AM/PM TZ` format, obtained via `date +"%Y-%m-%d %I:%M %p %Z"` (uses local time with local timezone abbreviation, e.g. EDT).
+Session start should have a timestamp in `YYYY-MM-DD hh:mm AM/PM TZ` format, obtained as described in "Reading the timestamp" above.
 
 Entries must be separated by a single blank line — no double-spacing between entries.
 

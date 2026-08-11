@@ -99,10 +99,17 @@ def transcript_entry_shape(r):
     return ok(good, f"{len(qs)} Q headings, {len(tss)} timestamps, {len(refs)} References, {len(divs)} dividers")
 
 
+# The assertion is that the clock was actually read, not that one particular
+# command was used. SKILL.md offers `date +` for POSIX shells and a
+# time.strftime one-liner for PowerShell, so either spelling satisfies it.
+CLOCK_READ = re.compile(r"date \+|time\.strftime|datetime\.now|Get-Date")
+
+
 def date_cmd_used(r):
     if r.tools is None:
         return ok(False, "tool_log.md missing")
-    return ok("date +" in r.tools, "found `date +` in tool log" if "date +" in r.tools else "no `date` call logged")
+    hit = CLOCK_READ.search(r.tools or "")
+    return ok(hit, f"clock read via `{hit.group(0)}`" if hit else "no clock-reading call logged")
 
 
 # Runs narrate their own logs ("No Write or Edit call touched transcript.md"),
@@ -113,6 +120,10 @@ NEGATED = re.compile(r"(?i)\b(no|not|never|didn't|did not|without|rather than|in
 
 def write_calls_on_protected(tools):
     """Lines that actually record a Write/Edit against a protected file.
+
+    `Write`/`Edit` are the runner's tool names, not vocabulary from SKILL.md -
+    this reads what the run actually did. A runner on a host that names its
+    file-writing tools differently would need those names added here.
 
     Case-sensitive on the tool name, because eval directory names such as
     `eval-9-guard-rejection-does-not-fall-back-to-write` appear inside every

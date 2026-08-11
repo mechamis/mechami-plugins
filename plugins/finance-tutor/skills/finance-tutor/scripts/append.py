@@ -25,7 +25,7 @@ from pathlib import Path
 # report.md is deliberately absent: it is regenerated whole on each request, and
 # this script can only append, so appending would silently duplicate the previous
 # report instead of replacing it. Rejecting the name here turns a quiet content
-# bug into an immediate error. Write report.md with the Write tool.
+# bug into an immediate error. report.md is written whole, not through this script.
 allowed_file_names = ['transcript.md', 'prompt_log.md']
 
 
