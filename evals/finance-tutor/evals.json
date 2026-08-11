@@ -110,7 +110,8 @@
         "Entries in prompt_log.md are separated by exactly one blank line, with no double-spacing",
         "The follow-up clarification about employer matching has its own '## Q:' entry in transcript.md with its own References section",
         "Answering the meta-request did not rewrite or reorder any existing transcript.md content",
-        "prompt_log.md numbering is sequential with no gaps or restarts"
+        "prompt_log.md numbering is sequential with no gaps or restarts",
+        "Each answer shown in chat is the same text appended to transcript.md, not a condensed summary with the full answer composed only into the append.py heredoc"
       ]
     },
     {
@@ -134,7 +135,8 @@
         "report.md is narrative prose organized by topic, not a verbatim reproduction of the '## Q:' transcript entries",
         "The 'Generate the report.' message was appended to prompt_log.md",
         "transcript.md was not truncated or rewritten while generating the report",
-        "Dollar amounts are written plainly as '$250,000' - not backslash-escaped ('\\$'), not spelled out ('250,000 dollars'), both of which are defensive reactions to the heredoc warning"
+        "Dollar amounts are written plainly as '$250,000' - not backslash-escaped ('\\$'), not spelled out ('250,000 dollars'), both of which are defensive reactions to the heredoc warning",
+        "Each answer shown in chat is the same text appended to transcript.md, not a condensed summary with the full answer composed only into the append.py heredoc"
       ]
     },
     {

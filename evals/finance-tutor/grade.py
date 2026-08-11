@@ -374,6 +374,8 @@ def eval_5(r):
         ok(match_q, f"transcript Q headings: {qs}"),
         MANUAL,
         ok(nums == list(range(1, len(nums) + 1)), f"numbering: {nums}"),
+        # Turn 4 is the meta-request, which produces no transcript entry.
+        detail_parity_all(r, [(2, 1), (3, 2)]),
     ]
 
 
@@ -395,6 +397,8 @@ def eval_6(r):
         ok(any("report" in e[1].lower() for e in entries), f"prompt log entries: {[e[1][:40] for e in entries]}"),
         MANUAL,
         no_escaped_dollars(r),
+        # Turn 4 requests the report and produces no transcript entry.
+        detail_parity_all(r, [(2, 1), (3, 2)]),
     ]
 
 
