@@ -20,7 +20,7 @@
         "The transcript entry uses the '## Q: <question>' heading, an italic timestamp line, the answer, a '**References**' section, and a '---' divider",
         "The `date` command was run to obtain the timestamp rather than the timestamp being written from memory",
         "All appends to transcript.md and prompt_log.md went through scripts/append.py; the Write tool was never used on either file",
-        "The chat answer carries the same level of detail as the transcript entry (within ~25% of its length), not a condensed summary"
+        "The chat answer is the same text appended to transcript.md, not a condensed summary of it"
       ]
     },
     {

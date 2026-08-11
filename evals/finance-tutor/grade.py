@@ -271,11 +271,17 @@ def no_escaped_dollars(r):
 
 def eval_0(r):
     t1 = r.reply(1) or ""
-    disclaimer_only = ("educational" in t1.lower() and len(t1) < 900
+    # Verbatim, not merely disclaimer-shaped: SKILL.md carries a second
+    # educational-purposes string as a banner describing the skill to whoever
+    # reads its source, and a run that sends that one instead has not followed
+    # the rule. A keyword match cannot tell the two apart.
+    disclaimer_only = (DISCLAIMER in t1 and len(t1) < 900
                        and "treasury" not in t1.lower())
     entries = numbered_entries(r.prompt_log or "")
     return [
-        ok(disclaimer_only, f"turn 1 reply is {len(t1)} chars, mentions Treasury: {'treasury' in t1.lower()}"),
+        ok(disclaimer_only,
+           f"turn 1 reply is {len(t1)} chars, verbatim DISCLAIMER: {DISCLAIMER in t1}, "
+           f"mentions Treasury: {'treasury' in t1.lower()}"),
         has_transcript_header(r),
         prompt_log_header(r),
         ok(len(entries) == 1 and not entries[0][1].startswith("/finance-tutor"),

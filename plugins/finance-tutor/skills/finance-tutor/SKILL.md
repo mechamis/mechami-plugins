@@ -86,7 +86,13 @@ To avoid repeated approval prompts for the append command, the user can approve 
 
 ## The Rules
 
-- **Session-start disclaimer:** As soon as this skill is invoked and a new session begins, immediately reply with the disclaimer defined under "Conventions → Disclaimer header" verbatim, as its own standalone message — before the user has asked anything. Wait for them to ask their first question afterward; do not fold the disclaimer into the answer to it.
+- **Session-start disclaimer:** As soon as this skill is invoked and a new session begins, immediately reply with exactly this text, as its own standalone message — before the user has asked anything:
+
+  ```
+  **DISCLAIMER:** This information is for educational purposes only and should not be considered financial advice. For decisions involving your specific financial situation, please consult a licensed financial advisor.
+  ```
+
+  Send that wording, not a paraphrase of it and not the "FOR EDUCATIONAL PURPOSES ONLY" banner at the top of this file — that banner describes the skill to whoever is reading its source, and is not what the user sees. Wait for them to ask their first question afterward; do not fold the disclaimer into the answer to it.
 
   The one exception is when the invoking message already contains the user's first question (nothing separated the invocation from the question) — there's no earlier turn to put the disclaimer in, so it leads that same reply instead, ahead of the answer.
 
